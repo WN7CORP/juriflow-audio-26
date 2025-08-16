@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,6 +18,7 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
   const [duration, setDuration] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [audioStartedAfterVideo, setAudioStartedAfterVideo] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const isVideo = isYouTubeUrl(news.capa);
@@ -41,6 +43,8 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
   const handleVideoClick = () => {
     if (isVideo) {
       setShowVideo(true);
+      setVideoEnded(false);
+      setAudioStartedAfterVideo(false);
       // Pause audio if it's playing
       if (isPlaying && audioRef.current) {
         audioRef.current.pause();
@@ -57,6 +61,7 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
       setTimeout(() => {
         audioRef.current?.play();
         setIsPlaying(true);
+        setAudioStartedAfterVideo(true);
       }, 500);
     }
   };
@@ -99,7 +104,6 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
   };
 
   const openSource = () => {
-    // Create an iframe to open the source within the app
     if (news.fonte) {
       window.open(news.fonte, '_blank');
     }
@@ -149,6 +153,11 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
                 </div>
               </div>
             )}
+            {videoEnded && (
+              <div className="absolute top-4 right-4 bg-green-500/80 backdrop-blur-sm rounded-full px-3 py-1 text-white text-sm font-medium">
+                Vídeo assistido ✓
+              </div>
+            )}
           </div>
         ) : (
           <div className="w-full h-64 bg-gradient-primary flex items-center justify-center">
@@ -174,7 +183,7 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
 
       {/* Audio Player */}
       {news.audio && (
-        <Card className="p-6 bg-gradient-surface border-border/50">
+        <Card className={`p-6 bg-gradient-surface border-border/50 ${audioStartedAfterVideo ? 'ring-2 ring-primary/50' : ''}`}>
           <div className="flex items-center gap-4">
             <Button
               onClick={togglePlay}
@@ -190,7 +199,9 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
             
             <div className="flex-1">
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-                <span>Áudio da notícia</span>
+                <span>
+                  {audioStartedAfterVideo ? "🎧 Reproduzindo após vídeo" : "Áudio da notícia"}
+                </span>
                 <span>
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
@@ -213,10 +224,12 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
           <audio
             ref={audioRef}
             src={news.audio}
-            autoPlay
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => setIsPlaying(false)}
+            onEnded={() => {
+              setIsPlaying(false);
+              setAudioStartedAfterVideo(false);
+            }}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
           />
