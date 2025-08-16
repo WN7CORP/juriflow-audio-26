@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { NewsItem } from "@/pages/Index";
 import { PlayCircle, Clock, Video, CheckCircle } from "lucide-react";
@@ -15,17 +16,9 @@ export const NewsCard = ({ news, isRead = false, onClick }: NewsCardProps) => {
 
   return (
     <Card 
-      className="group overflow-hidden bg-gradient-surface border-border/50 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-card hover:-translate-y-1 relative"
+      className="group overflow-hidden bg-gradient-surface border-border/50 hover:border-primary/30 cursor-pointer transition-all duration-300 hover:shadow-card hover:-translate-y-1"
       onClick={onClick}
     >
-      {/* Selo de lida */}
-      {isRead && (
-        <div className="absolute top-3 right-3 z-10 bg-green-500/90 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
-          <CheckCircle className="h-3 w-3" />
-          <span className="font-medium">Lida</span>
-        </div>
-      )}
-      
       <div className="flex gap-4 p-4">
         {/* Image */}
         <div className="relative flex-shrink-0">
@@ -53,6 +46,14 @@ export const NewsCard = ({ news, isRead = false, onClick }: NewsCardProps) => {
               </div>
             )}
           </div>
+          
+          {/* Selo de lida - agora abaixo da capa */}
+          {isRead && (
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-green-500/90 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap">
+              <CheckCircle className="h-3 w-3" />
+              <span className="font-medium">Lida</span>
+            </div>
+          )}
           
           {/* Audio indicator */}
           {news.audio && (
