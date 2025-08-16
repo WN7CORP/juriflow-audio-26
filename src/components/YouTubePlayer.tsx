@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useCallback } from 'react';
 
 interface YouTubePlayerProps {
@@ -31,9 +32,17 @@ export const YouTubePlayer = ({ videoId, onVideoEnd, onVideoStart }: YouTubePlay
         playerRef.current = null;
       }
 
-      // Clear the container
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+      // Instead of clearing innerHTML, let React manage the DOM
+      // Only clear if container has content that's not managed by React
+      const container = containerRef.current;
+      if (container && container.children.length > 0) {
+        // Check if children are YouTube player elements (not React elements)
+        const hasYouTubeElements = Array.from(container.children).some(
+          child => child.tagName === 'IFRAME' || child.id.includes('youtube')
+        );
+        if (hasYouTubeElements) {
+          container.innerHTML = '';
+        }
       }
 
       playerRef.current = new window.YT.Player(containerRef.current, {
@@ -112,7 +121,7 @@ export const YouTubePlayer = ({ videoId, onVideoEnd, onVideoStart }: YouTubePlay
     return () => {
       isMountedRef.current = false;
       
-      // Safe cleanup of player
+      // Safe cleanup of player without DOM manipulation
       if (playerRef.current) {
         try {
           if (typeof playerRef.current.destroy === 'function') {
@@ -123,6 +132,8 @@ export const YouTubePlayer = ({ videoId, onVideoEnd, onVideoStart }: YouTubePlay
         }
         playerRef.current = null;
       }
+      
+      // Let React handle DOM cleanup naturally
     };
   }, [initializePlayer]);
 
