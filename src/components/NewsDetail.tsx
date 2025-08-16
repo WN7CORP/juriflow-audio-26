@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Play, Pause, ExternalLink, Volume2, Video } from "lucide-react";
@@ -19,63 +19,104 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
   const [showVideo, setShowVideo] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
   const [audioStartedAfterVideo, setAudioStartedAfterVideo] = useState(false);
+  const [audioLoaded, setAudioLoaded] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   const isVideo = isYouTubeUrl(news.capa);
   const videoId = isVideo ? extractYouTubeId(news.capa) : null;
   const thumbnailUrl = isVideo ? getYouTubeThumbnail(news.capa) : news.capa;
 
-  const togglePlay = () => {
+  // Reset audio state when component mounts or news changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setShowVideo(false);
+    setVideoEnded(false);
+    setAudioStartedAfterVideo(false);
+    setAudioLoaded(false);
+  }, [news.id]);
+
+  const resetAudioState = () => {
     if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setAudioStartedAfterVideo(false);
+  };
+
+  const togglePlay = async () => {
+    if (!audioRef.current) return;
+
+    try {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        // Pause video if it's playing
+        // Stop video if it's playing
         if (showVideo) {
           setShowVideo(false);
         }
-        audioRef.current.play();
+        
+        // Ensure audio is loaded
+        if (!audioLoaded) {
+          audioRef.current.load();
+        }
+        
+        await audioRef.current.play();
+        setIsPlaying(true);
       }
-      setIsPlaying(!isPlaying);
+    } catch (error) {
+      console.error('Erro ao reproduzir áudio:', error);
+      // Reset audio element if there's an error
+      if (audioRef.current) {
+        audioRef.current.load();
+        setAudioLoaded(false);
+      }
+      setIsPlaying(false);
     }
   };
 
   const handleVideoClick = () => {
     if (isVideo) {
+      // Reset audio completely before showing video
+      resetAudioState();
       setShowVideo(true);
       setVideoEnded(false);
-      setAudioStartedAfterVideo(false);
-      // Pause audio if it's playing
-      if (isPlaying && audioRef.current) {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      }
     }
   };
 
   const handleVideoEnd = () => {
     setVideoEnded(true);
     setShowVideo(false);
-    // Auto-play audio after video ends
+    
+    // Auto-play audio after video ends with a longer delay
     if (news.audio && audioRef.current) {
-      setTimeout(() => {
-        audioRef.current?.play();
-        setIsPlaying(true);
-        setAudioStartedAfterVideo(true);
-      }, 500);
+      setTimeout(async () => {
+        try {
+          if (audioRef.current) {
+            // Ensure audio is properly loaded
+            audioRef.current.load();
+            await audioRef.current.play();
+            setIsPlaying(true);
+            setAudioStartedAfterVideo(true);
+          }
+        } catch (error) {
+          console.error('Erro ao reproduzir áudio após vídeo:', error);
+        }
+      }, 1000);
     }
   };
 
   const handleVideoStart = () => {
-    // Pause audio when video starts
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    }
+    // Ensure audio is completely stopped when video starts
+    resetAudioState();
   };
 
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
+    if (audioRef.current && !audioRef.current.paused) {
       setCurrentTime(audioRef.current.currentTime);
     }
   };
@@ -83,11 +124,26 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
+      setAudioLoaded(true);
+    }
+  };
+
+  const handleAudioCanPlay = () => {
+    setAudioLoaded(true);
+  };
+
+  const handleAudioError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
+    console.error('Erro no áudio:', e);
+    setIsPlaying(false);
+    setAudioLoaded(false);
+    // Try to reload the audio
+    if (audioRef.current) {
+      audioRef.current.load();
     }
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (audioRef.current) {
+    if (audioRef.current && audioLoaded) {
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const percentage = clickX / rect.width;
@@ -188,7 +244,8 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
             <Button
               onClick={togglePlay}
               size="lg"
-              className="flex-shrink-0 w-12 h-12 rounded-full bg-primary hover:bg-primary/90"
+              disabled={!audioLoaded}
+              className="flex-shrink-0 w-12 h-12 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-50"
             >
               {isPlaying ? (
                 <Pause className="h-5 w-5" />
@@ -201,6 +258,7 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
                 <span>
                   {audioStartedAfterVideo ? "🎧 Reproduzindo após vídeo" : "Áudio da notícia"}
+                  {!audioLoaded && " (Carregando...)"}
                 </span>
                 <span>
                   {formatTime(currentTime)} / {formatTime(duration)}
@@ -224,8 +282,11 @@ export const NewsDetail = ({ news, onBack }: NewsDetailProps) => {
           <audio
             ref={audioRef}
             src={news.audio}
+            preload="metadata"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onCanPlay={handleAudioCanPlay}
+            onError={handleAudioError}
             onEnded={() => {
               setIsPlaying(false);
               setAudioStartedAfterVideo(false);
