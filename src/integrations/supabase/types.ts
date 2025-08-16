@@ -2024,28 +2024,34 @@ export type Database = {
       }
       "NOTICIAS-AUDIO": {
         Row: {
+          audio: string | null
           capa: string | null
-          conteudo: string | null
-          created_at: string | null
-          id: string
-          link_audio: string | null
-          titulo: string
+          data: string | null
+          fonte: string | null
+          id: number
+          portal: string | null
+          "Resumo breve": string | null
+          Titulo: string | null
         }
         Insert: {
+          audio?: string | null
           capa?: string | null
-          conteudo?: string | null
-          created_at?: string | null
-          id?: string
-          link_audio?: string | null
-          titulo: string
+          data?: string | null
+          fonte?: string | null
+          id?: number
+          portal?: string | null
+          "Resumo breve"?: string | null
+          Titulo?: string | null
         }
         Update: {
+          audio?: string | null
           capa?: string | null
-          conteudo?: string | null
-          created_at?: string | null
-          id?: string
-          link_audio?: string | null
-          titulo?: string
+          data?: string | null
+          fonte?: string | null
+          id?: number
+          portal?: string | null
+          "Resumo breve"?: string | null
+          Titulo?: string | null
         }
         Relationships: []
       }
@@ -2774,15 +2780,7 @@ export type Database = {
           read_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_news_read_news_id_fkey"
-            columns: ["news_id"]
-            isOneToOne: false
-            referencedRelation: "NOTICIAS-AUDIO"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_notes: {
         Row: {
