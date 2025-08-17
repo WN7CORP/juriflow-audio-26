@@ -2763,22 +2763,25 @@ export type Database = {
       }
       user_news_read: {
         Row: {
+          created_at: string
           id: string
-          news_id: string | null
-          read_at: string | null
-          user_id: string | null
+          news_id: number
+          read_at: string
+          user_id: string
         }
         Insert: {
+          created_at?: string
           id?: string
-          news_id?: string | null
-          read_at?: string | null
-          user_id?: string | null
+          news_id: number
+          read_at?: string
+          user_id: string
         }
         Update: {
+          created_at?: string
           id?: string
-          news_id?: string | null
-          read_at?: string | null
-          user_id?: string | null
+          news_id?: number
+          read_at?: string
+          user_id?: string
         }
         Relationships: []
       }
